@@ -1,4 +1,6 @@
 import numpy as np
+import pandas as pd
+import seaborn as sn
 import matplotlib.pyplot as plt
 
 def show_train_history(history):
@@ -18,6 +20,18 @@ def show_train_history(history):
   ax[1].set_xlabel("Epoch")
   ax[1].set_ylabel("Accuracy")
   ax[1].legend(["acc", "val_acc"])
+  pass
+
+def show_confusion_matrix(conf_mat):
+  fig = plt.figure(figsize=(15, 10))
+  df_conf_mat = pd.DataFrame(conf_mat)
+  sn.heatmap(
+    conf_mat,
+    annot=True,
+    cmap="Blues",
+    cbar=False,
+    fmt="g"
+  )
   pass
 
 class DisplayPlot():

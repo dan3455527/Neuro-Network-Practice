@@ -2,6 +2,7 @@ import torch
 import torch.nn.functional as F
 import numpy as np
 import time
+from sklearn.metrics import confusion_matrix
 
 class TrainCompile():
   def __init__(self, model, train_dataloader, loss_func, optimizer, n_epochs, device=None, val_dataloader=None, verbose=0):
@@ -63,10 +64,10 @@ class TrainCompile():
     avg_val_iter_acc = np.mean(np.array(iter_val_acc_ls))
     return avg_val_iter_loss, avg_val_iter_acc
 
-  def verbose_display(self, epoch, loss, val_loss, acc, val_acc):
+  def verbose_display(self, epoch, loss, val_loss, acc, val_acc, runtime):
     loss, val_loss, acc, val_acc = \
       np.mean(loss), np.mean(val_loss), np.mean(acc), np.mean(val_acc)
-    display_text = f"""Epoch {epoch+1}/{self.n_epochs} \nloss: {loss:.4f}, val_loss: {val_loss:.4f}, acc: {acc:.4f}, val_acc: {val_acc:.4f}\n{"-"*70}"""
+    display_text = f"""Epoch {epoch+1}/{self.n_epochs} \nloss: {loss:.4f}, val_loss: {val_loss:.4f}, acc: {acc:.4f}, val_acc: {val_acc:.4f}, {runtime}\n{"-"*70}"""
     return display_text
 
   def fit(self):
@@ -76,7 +77,9 @@ class TrainCompile():
       "acc" : np.array([]),
       "val_acc" : np.array([])
     } 
+    total_str_time = time.time()
     for epoch in range(self.n_epochs):
+      epoch_str_time = time.time()
       loss, acc = self.train_iteration_loop()
       if self.val_dataloader != None:
         val_loss, val_acc = self.validation_iteration_loop()
@@ -84,12 +87,45 @@ class TrainCompile():
       history["acc"] = np.hstack((history["acc"], acc))
       history["val_loss"] = np.hstack((history["val_loss"], val_loss))
       history["val_acc"] = np.hstack((history["val_acc"], val_acc))
-      display_text = self.verbose_display(epoch, loss, val_loss, acc, val_acc)
+      epoch_end_time = time.time()
+      runtime = self.get_runtime(epoch_str_time, epoch_end_time)
+      display_text = self.verbose_display(epoch, loss, val_loss, acc, val_acc, runtime)
       print(display_text)
       pass
+    total_end_time = time.time()
+    print(f"total train time : {self.get_runtime(total_str_time, total_end_time)}")
     return history
 
-  def get_runtime(self):
-    time_sec = time.time()
-    
+  def get_runtime(self, str_time, end_time):
+    inference_time = end_time-str_time
+    hours = int(inference_time // 3600)
+    minute = int((inference_time % 3600) // 60)
+    seconds = int(inference_time % 60)
+    inference_time_str = f"{hours:02d}:{minute:02d}:{seconds:02d}"
+    return inference_time_str
+  
+
+
+class TestCompile():
+  def __init__(self,model, test_data, test_target, device):
+    self.model=model
+    self.test_data = test_data
+    self.norm_test_data_torch = torch.from_numpy(np.expand_dims(test_data, axis=1))/255
+    self.test_target = test_target
+    self.test_target_torch = torch.from_numpy(test_target)
+    self.device=device
     pass
+  
+  def evaluate(self):
+    self.model.eval()
+    self.model = self.model.to(self.device)
+    outputs = self.model(self.norm_test_data_torch.to(self.device, dtype=torch.float))
+    self.pred = torch.argmax(F.softmax(outputs), dim=1)
+    num_acc = sum(self.pred==self.test_target_torch.to(self.device))
+    self.accuracy = num_acc / len(self.norm_test_data_torch)
+    print(f"""Evaluation : \nAccuracy : {self.accuracy:.4f}\n{"-"*70}""")
+    return self.pred.detach().cpu().numpy(), self.accuracy.detach().cpu().numpy()
+  
+  def get_confusion_matrix(self):
+    conf_mat = confusion_matrix(self.test_target, self.pred.detach().cpu().numpy()) 
+    return conf_mat
