@@ -1,5 +1,6 @@
 import torch
 import torch.nn.functional as F
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 import numpy as np
 import time
 from sklearn.metrics import confusion_matrix
@@ -78,11 +79,17 @@ class TrainCompile():
       "val_acc" : np.array([])
     } 
     total_str_time = time.time()
+    scheduler = ReduceLROnPlateau(
+      optimizer=self.optimizer,
+      mode="min",
+      patience=5
+    )
     for epoch in range(self.n_epochs):
       epoch_str_time = time.time()
       loss, acc = self.train_iteration_loop()
       if self.val_dataloader != None:
         val_loss, val_acc = self.validation_iteration_loop()
+        scheduler.step(val_loss)
       history["loss"] = np.hstack((history["loss"], loss))
       history["acc"] = np.hstack((history["acc"], acc))
       history["val_loss"] = np.hstack((history["val_loss"], val_loss))

@@ -50,3 +50,6 @@ class DisplayMatrix():
 
   def show_confusion_matrix(self):
     pass
+  
+  def show_data_distribution(self, data):
+    pass
