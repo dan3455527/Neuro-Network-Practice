@@ -63,7 +63,7 @@ compiler = TrainCompile(
 
 test_compiler = TestCompile(model, X_test, Y_test, device)
 
-history = compiler.fit()
+history = compiler.fit(is_checkpoint=True)
 
 pred, acc = test_compiler.evaluate()
 conf_mat = test_compiler.get_confusion_matrix()

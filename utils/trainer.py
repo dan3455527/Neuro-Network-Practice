@@ -4,6 +4,7 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 import numpy as np
 import time
 from sklearn.metrics import confusion_matrix
+import os
 
 class TrainCompile():
   def __init__(self, model, train_dataloader, loss_func, optimizer, n_epochs, device=None, val_dataloader=None, verbose=0):
@@ -71,7 +72,7 @@ class TrainCompile():
     display_text = f"""Epoch {epoch+1}/{self.n_epochs} \nloss: {loss:.4f}, val_loss: {val_loss:.4f}, acc: {acc:.4f}, val_acc: {val_acc:.4f}, {runtime}\n{"-"*70}"""
     return display_text
 
-  def fit(self):
+  def fit(self, is_checkpoint=False):
     history = {
       "loss" : np.array([]),
       "val_loss" : np.array([]),
@@ -98,6 +99,8 @@ class TrainCompile():
       runtime = self.get_runtime(epoch_str_time, epoch_end_time)
       display_text = self.verbose_display(epoch, loss, val_loss, acc, val_acc, runtime)
       print(display_text)
+      if is_checkpoint == True:
+        self.save_checkpoint(epoch, saved_period=10)
       pass
     total_end_time = time.time()
     print(f"total train time : {self.get_runtime(total_str_time, total_end_time)}")
@@ -110,6 +113,23 @@ class TrainCompile():
     seconds = int(inference_time % 60)
     inference_time_str = f"{hours:02d}:{minute:02d}:{seconds:02d}"
     return inference_time_str
+  
+  def save_checkpoint(self, epoch, saved_period=5):
+    dir_path = "./weights"
+    if not os.path.isdir(dir_path):
+      os.mkdir(dir_path)
+    if ((epoch+1) % saved_period) == 0:
+      ckpt_name = f"weight_epoch_{epoch+1}.ckpt"
+      path = os.path.join(dir_path, ckpt_name)
+      torch.save(
+        {
+          "epoch" : epoch,
+          "weight_state_dict" : self.model.state_dict(),
+          "optimizer_state_dict" : self.optimizer.state_dict(),
+        },
+        path
+      )
+
   
 
 
