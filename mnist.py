@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
-from torch_model.model import CNN, FCN
+from torch_model.mnist_model import CNN, FCN
 from torchsummary import summary
 import matplotlib.pyplot as plt
 from keras.datasets import mnist
@@ -46,7 +46,7 @@ model.train()
 
 
 # train
-n_epoch=50
+n_epoch=5
 loss_func = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
 

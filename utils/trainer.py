@@ -72,7 +72,7 @@ class TrainCompile():
     display_text = f"""Epoch {epoch+1}/{self.n_epochs} \nloss: {loss:.4f}, val_loss: {val_loss:.4f}, acc: {acc:.4f}, val_acc: {val_acc:.4f}, {runtime}\n{"-"*70}"""
     return display_text
 
-  def fit(self, is_checkpoint=False):
+  def fit(self, is_checkpoint=False, lr_decay=False):
     history = {
       "loss" : np.array([]),
       "val_loss" : np.array([]),
@@ -90,7 +90,8 @@ class TrainCompile():
       loss, acc = self.train_iteration_loop()
       if self.val_dataloader != None:
         val_loss, val_acc = self.validation_iteration_loop()
-        scheduler.step(val_loss)
+        if lr_decay==True:
+          scheduler.step(val_loss)
       history["loss"] = np.hstack((history["loss"], loss))
       history["acc"] = np.hstack((history["acc"], acc))
       history["val_loss"] = np.hstack((history["val_loss"], val_loss))
@@ -135,11 +136,12 @@ class TrainCompile():
 
 class TestCompile():
   def __init__(self,model, test_data, test_target, device):
+    #FIXME: test_data, test_target shape may be variance 
     self.model=model
     self.test_data = test_data
-    self.norm_test_data_torch = torch.from_numpy(np.expand_dims(test_data, axis=1))/255
-    self.test_target = test_target
-    self.test_target_torch = torch.from_numpy(test_target)
+    self.norm_test_data_torch = torch.from_numpy(np.reshape(test_data, (test_data.shape[0], 3, 32, 32)))/255
+    self.test_target = test_target.squeeze()
+    self.test_target_torch = torch.from_numpy(self.test_target)
     self.device=device
     pass
   

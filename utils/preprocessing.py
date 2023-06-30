@@ -25,4 +25,3 @@ def get_split_sampler(datasets, split_ratio, shuffle=True, random_seed=1234):
   train_sampler = SubsetRandomSampler(train_indices)
   val_sampler = SubsetRandomSampler(val_indices)
   return train_sampler, val_sampler
-
